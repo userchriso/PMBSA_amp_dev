@@ -18,6 +18,7 @@ struct ContentView: View {
     @State private var loadingTask: Task<Void, Never>?
     @State private var selectedMedicalAidURL: String?
     @State private var showingInAppBrowser = false
+    @State private var showAssistant = false
     
     var body: some View {
         NavigationStack {
@@ -93,9 +94,18 @@ struct ContentView: View {
                     } label: {
                         Image(systemName: "list.bullet")
                     }
-                    
+
                     Spacer()
-                    
+
+                    // PMB Assistant
+                    Button {
+                        showAssistant = true
+                    } label: {
+                        Image(systemName: "stethoscope.circle")
+                    }
+
+                    Spacer()
+
                     // Share button
                     Button {
                         shareApp()
@@ -121,6 +131,9 @@ struct ContentView: View {
                     selectedURL: $selectedMedicalAidURL,
                     showingInAppBrowser: $showingInAppBrowser
                 )
+            }
+            .sheet(isPresented: $showAssistant) {
+                PMBAssistantView(isPresented: $showAssistant)
             }
             .sheet(isPresented: $showingInAppBrowser) {
                 if let urlString = selectedMedicalAidURL {

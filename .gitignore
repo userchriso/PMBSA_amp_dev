@@ -1,0 +1,20 @@
+# Secret keys — never commit
+**/Secrets.swift
+Secrets.swift
+
+# Xcode
+*.xcuserstate
+xcuserdata/
+*.xcworkspace/xcuserdata/
+DerivedData/
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# macOS
+.DS_Store
+
+# SwiftPM
+.build/
+*.resolved

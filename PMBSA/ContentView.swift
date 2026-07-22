@@ -424,30 +424,48 @@ struct MedicalAid: Identifiable {
     let url: String
 }
 
-// WebView Store - manages WebView actions
+/// Observable bridge between SwiftUI controls (toolbar buttons) and a live `WKWebView` instance.
+///
+/// `WebView.makeUIView(context:)` assigns the created `WKWebView` to `webView` on setup, after
+/// which SwiftUI code that doesn't otherwise have a reference to the web view (e.g. toolbar
+/// buttons in `ContentView` and `InAppBrowserView`, or `QuickLinksView`'s "Home" button) can
+/// drive navigation through this store. Each `WebView` instance owns its own `WebViewStore` —
+/// `ContentView` and `InAppBrowserView` each keep a separate one, so they control independent
+/// web views.
+///
+/// All methods are no-ops if `webView` is `nil` (i.e. before the underlying `WKWebView` has been
+/// created).
 @Observable
 class WebViewStore {
     var webView: WKWebView?
-    
+
     func goBack() {
         webView?.goBack()
     }
-    
+
     func goForward() {
         webView?.goForward()
     }
-    
+
     func reload() {
         webView?.reload()
     }
-    
+
+    /// Navigates the underlying web view to `urlString`. Silently does nothing if `urlString`
+    /// doesn't parse as a valid `URL`.
     func loadURL(_ urlString: String) {
         guard let url = URL(string: urlString) else { return }
         webView?.load(URLRequest(url: url))
     }
 }
 
-// WebView component to display your website
+/// `UIViewRepresentable` wrapper around `WKWebView`.
+///
+/// Loads `url` once on first `updateUIView` (subsequent changes to `url` are not re-loaded —
+/// only `reload` toggling or explicit `WebViewStore.loadURL(_:)` calls trigger navigation after
+/// the initial load). `canGoBack`/`canGoForward`/`isLoading` are output-only bindings kept in
+/// sync by `Coordinator`. The created `WKWebView` is registered on `store` so external SwiftUI
+/// code can drive navigation (see `WebViewStore`).
 struct WebView: UIViewRepresentable {
     let url: URL?
     @Binding var reload: Bool
@@ -487,31 +505,38 @@ struct WebView: UIViewRepresentable {
             let request = URLRequest(url: url)
             webView.load(request)
         }
-        
+
         // Handle reload when the reload state changes
         if reload != context.coordinator.lastReloadState {
             webView.reload()
             context.coordinator.lastReloadState = reload
         }
-        
+
         // Update navigation state
         canGoBack = webView.canGoBack
         canGoForward = webView.canGoForward
     }
-    
+
     // Create a Coordinator to handle navigation
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
     }
-    
+
+    /// `WKNavigationDelegate` for `WebView`. Keeps `isLoading`/`canGoBack`/`canGoForward`
+    /// bindings in sync with the web view's actual navigation state, and redirects certain
+    /// external domains out to Safari instead of letting them load in-app.
     class Coordinator: NSObject, WKNavigationDelegate {
         var parent: WebView
+        /// Tracks the last `reload` binding value seen, so `WebView.updateUIView` can detect a
+        /// *toggle* of `reload` (rather than reloading on every body re-evaluation). Toggling
+        /// `parent.reload` from outside (e.g. the toolbar reload button) is what drives an
+        /// actual `webView.reload()` call.
         var lastReloadState: Bool = false
-        
+
         init(_ parent: WebView) {
             self.parent = parent
         }
-        
+
         // Called when navigation starts
         func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
             DispatchQueue.main.async {
@@ -555,7 +580,12 @@ struct WebView: UIViewRepresentable {
             }
         }
         
-        // This method is called when a link is clicked
+        /// Intercepts link taps (not the initial page load or programmatic navigation — only
+        /// `navigationType == .linkActivated`). If the target host contains one of
+        /// `externalDomains` (youtube.com, youtu.be, integratedlife.co.za, ilive.today), the
+        /// navigation is cancelled and the URL is opened in Safari via `UIApplication.shared.open`
+        /// instead. Everything else loads in-app as normal. Update `externalDomains` here if more
+        /// sites need to be forced out to Safari.
         func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
             
             // Get the URL that was clicked

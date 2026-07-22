@@ -5,21 +5,47 @@
 
 import Foundation
 
+/// A single turn in the PMB Assistant chat, in the shape the Anthropic Messages API expects.
+///
+/// `role` is either `"user"` or `"assistant"` — it's sent verbatim in the request body's
+/// `messages` array (see `ClaudeService.callAPI()`), so it must stay one of those two literal
+/// strings.
 struct ChatMessage: Identifiable {
     let id = UUID()
     let role: String
     let content: String
 }
 
+/// Drives the PMB Assistant chat feature by calling the Anthropic Messages API directly from
+/// the client (no backend proxy).
+///
+/// Requires `Secrets.claudeAPIKey` to be set — see `PMBSA/Secrets.swift`, which is gitignored
+/// and must be created locally before this will compile (see repo README).
+///
+/// Because the API key ships inside the app binary, it is extractable by anyone who inspects
+/// the shipped build. There is currently no server-side proxy hiding it.
 @Observable
 class ClaudeService {
+    /// Full conversation history for the current chat session, oldest first. Cleared by
+    /// `clearHistory()`. The entire array is resent as context on every `send(_:)` call, so it
+    /// also determines the size (and cost) of each request.
     var messages: [ChatMessage] = []
+    /// True while a request to the Anthropic API is in flight. Drives the typing indicator in
+    /// `PMBAssistantView`.
     var isLoading = false
+    /// Set to a user-facing message when the last `send(_:)` call failed. `nil` when there's no
+    /// active error. Cleared automatically at the start of the next `send(_:)` call and by
+    /// `clearHistory()`.
     var errorMessage: String?
 
     private let apiKey = Secrets.claudeAPIKey
+    /// Anthropic model ID used for every request. Update here if the model needs to change.
     private let model = "claude-haiku-4-5-20251001"
 
+    /// Fixed system prompt sent with every request. Specializes the assistant in South African
+    /// PMB/CDL/DTP rules, prosthetics/orthotics coverage, claims/appeals, and the 7 medical
+    /// schemes listed below. This string is the only place PMB reference knowledge is embedded
+    /// in the native app — everything else the assistant "knows" comes from the model itself.
     private let systemPrompt = """
     You are a specialist assistant for Prescribed Minimum Benefits (PMBs) in South Africa, with a particular focus on prosthetics and orthotics coverage for amputees and people with limb differences.
 
@@ -42,6 +68,14 @@ class ClaudeService {
     Never provide specific medical advice — recommend consulting a healthcare provider or prosthetist for clinical decisions.
     """
 
+    /// Appends `userText` to `messages` as a user turn, calls the Anthropic API with the full
+    /// conversation so far, and appends the reply (or sets `errorMessage`) when it returns.
+    ///
+    /// Always sets `isLoading = true` for the duration of the call and clears any previous
+    /// `errorMessage` before starting, regardless of outcome. On failure, `errorMessage` is set
+    /// to a generic connectivity message — the underlying error (HTTP status, decode failure,
+    /// etc.) is swallowed, not surfaced. The user's message stays in `messages` even if the
+    /// call fails, so retry means calling `send(_:)` again rather than resending the same turn.
     func send(_ userText: String) async {
         let userMsg = ChatMessage(role: "user", content: userText)
         messages.append(userMsg)
@@ -58,11 +92,24 @@ class ClaudeService {
         isLoading = false
     }
 
+    /// Resets the chat: clears `messages` and `errorMessage`. Causes `PMBAssistantView` to show
+    /// the `WelcomeCard` again since it keys off `messages.isEmpty`.
     func clearHistory() {
         messages = []
         errorMessage = nil
     }
 
+    /// Sends the current `messages` array plus `systemPrompt` to the Anthropic Messages API and
+    /// returns the assistant's reply text.
+    ///
+    /// - Throws: `URLError(.badURL)` if the endpoint URL fails to construct (should never
+    ///   happen in practice); `NSError(domain: "ClaudeAPI", code: <HTTP status>)` on any non-200
+    ///   response; a decoding error if the response body doesn't match `AnthropicResponse`.
+    /// - Returns: The text of the first content block in the response, or `"No response
+    ///   received."` if the API returned an empty `content` array.
+    /// - Note: 30-second request timeout (`request.timeoutInterval`). Every call resends the
+    ///   full `messages` history as context — there's no truncation/windowing, so very long
+    ///   sessions grow the request payload and token cost accordingly.
     private func callAPI() async throws -> String {
         guard let url = URL(string: "https://api.anthropic.com/v1/messages") else {
             throw URLError(.badURL)
@@ -98,10 +145,14 @@ class ClaudeService {
     }
 }
 
+/// Minimal decode target for the Anthropic Messages API response — only pulls out what
+/// `callAPI()` needs (the reply text). Does not model token usage, stop reason, message ID, etc.
 private struct AnthropicResponse: Codable {
     let content: [AnthropicContent]
 }
 
+/// One content block from an Anthropic response. `type` is decoded but unused — `callAPI()`
+/// only reads `text`, so this assumes the response is plain text (no tool-use or image blocks).
 private struct AnthropicContent: Codable {
     let text: String
     let type: String

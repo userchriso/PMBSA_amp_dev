@@ -11,7 +11,21 @@ import SwiftUI
 struct PMBSAApp: App {
     var body: some Scene {
         WindowGroup {
+            RootView()
+        }
+    }
+}
+
+struct RootView: View {
+    @State private var showLaunch = true
+
+    var body: some View {
+        ZStack {
             ContentView()
+            if showLaunch {
+                LaunchAnimationView(isPresented: $showLaunch)
+                    .transition(.opacity)
+            }
         }
     }
 }

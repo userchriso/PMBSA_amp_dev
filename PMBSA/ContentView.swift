@@ -19,7 +19,9 @@ struct ContentView: View {
     @State private var selectedMedicalAidURL: String?
     @State private var showingInAppBrowser = false
     @State private var showAssistant = false
-    
+    @State private var showHowToClaim = false
+    @State private var showAppealsComplaints = false
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -65,7 +67,7 @@ struct ContentView: View {
                     }
                 }
             }
-            .navigationTitle("PMB Prosthetics SA")
+            .navigationTitle("Prosthetics PMBs for SA Members")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 // Bottom toolbar with all buttons
@@ -129,11 +131,20 @@ struct ContentView: View {
                     webViewStore: webViewStore,
                     isPresented: $showQuickLinks,
                     selectedURL: $selectedMedicalAidURL,
-                    showingInAppBrowser: $showingInAppBrowser
+                    showingInAppBrowser: $showingInAppBrowser,
+                    showAssistant: $showAssistant,
+                    showHowToClaim: $showHowToClaim,
+                    showAppealsComplaints: $showAppealsComplaints
                 )
             }
             .sheet(isPresented: $showAssistant) {
                 PMBAssistantView(isPresented: $showAssistant)
+            }
+            .sheet(isPresented: $showHowToClaim) {
+                HowToClaimView(isPresented: $showHowToClaim)
+            }
+            .sheet(isPresented: $showAppealsComplaints) {
+                AppealsComplaintsView(isPresented: $showAppealsComplaints)
             }
             .sheet(isPresented: $showingInAppBrowser) {
                 if let urlString = selectedMedicalAidURL {
@@ -183,7 +194,10 @@ struct QuickLinksView: View {
     @Binding var isPresented: Bool
     @Binding var selectedURL: String?
     @Binding var showingInAppBrowser: Bool
-    
+    @Binding var showAssistant: Bool
+    @Binding var showHowToClaim: Bool
+    @Binding var showAppealsComplaints: Bool
+
     // Define your medical aid schemes with their official websites
     let medicalAids = [
         MedicalAid(name: "Discovery Health", icon: "cross.case.fill", color: .green, url: "https://www.discovery.co.za"),
@@ -205,8 +219,29 @@ struct QuickLinksView: View {
                     } label: {
                         Label("Home", systemImage: "house.fill")
                     }
+
+                    Button {
+                        isPresented = false
+                        showAssistant = true
+                    } label: {
+                        Label("FAQ / PMB Assistant", systemImage: "stethoscope.circle.fill")
+                    }
+
+                    Button {
+                        isPresented = false
+                        showHowToClaim = true
+                    } label: {
+                        Label("How to Claim", systemImage: "list.number")
+                    }
+
+                    Button {
+                        isPresented = false
+                        showAppealsComplaints = true
+                    } label: {
+                        Label("Appeals / Complaints", systemImage: "exclamationmark.bubble.fill")
+                    }
                 }
-                
+
                 Section("Medical Aid Schemes") {
                     ForEach(medicalAids) { aid in
                         Button {

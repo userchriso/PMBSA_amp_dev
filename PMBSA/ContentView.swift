@@ -240,6 +240,21 @@ struct QuickLinksView: View {
                     } label: {
                         Label("Appeals / Complaints", systemImage: "exclamationmark.bubble.fill")
                     }
+
+                    Button {
+                        isPresented = false
+                        webViewStore.scrollToAnchor("funding")
+                    } label: {
+                        Label {
+                            Text("Explore Your Funding Options")
+                        } icon: {
+                            Image("FundingBadge")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 20, height: 20)
+                                .clipShape(Circle())
+                        }
+                    }
                 }
 
                 Section("Medical Aid Schemes") {
@@ -301,31 +316,6 @@ struct QuickLinksView: View {
                             }
                             Spacer()
                             Image(systemName: "arrow.up.right")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                    
-                    // Integrated Life website
-                    Button {
-                        if let url = URL(string: "https://integratedlife.co.za") {
-                            UIApplication.shared.open(url)
-                        }
-                        isPresented = false
-                    } label: {
-                        HStack {
-                            Image(systemName: "heart.text.square.fill")
-                                .foregroundStyle(.blue)
-                                .frame(width: 30)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Integrated Life")
-                                    .foregroundStyle(.primary)
-                                Text("Open in Safari")
-                                    .font(.caption2)
-                                    .foregroundStyle(.secondary)
-                            }
-                            Spacer()
-                            Image(systemName: "arrow.up.right.square")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
@@ -491,6 +481,19 @@ class WebViewStore {
     func loadURL(_ urlString: String) {
         guard let url = URL(string: urlString) else { return }
         webView?.load(URLRequest(url: url))
+    }
+
+    /// Smooth-scrolls to the element with id `anchorID` within the already-loaded page.
+    ///
+    /// Used instead of `loadURL(_:)` for same-page section jumps — `WKWebView.load(_:)` with a
+    /// URL that only differs by fragment doesn't reliably trigger the browser's native
+    /// scroll-to-anchor behavior, since it's treated as a fresh navigation rather than an
+    /// in-page fragment jump. This assumes the target page (with a matching `id` element) is
+    /// already loaded; it does not navigate anywhere first.
+    func scrollToAnchor(_ anchorID: String) {
+        webView?.evaluateJavaScript(
+            "document.getElementById('\(anchorID)')?.scrollIntoView({behavior: 'smooth', block: 'start'});"
+        )
     }
 }
 

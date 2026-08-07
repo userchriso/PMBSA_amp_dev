@@ -131,7 +131,11 @@ struct WelcomeCard: View {
         "What are PMBs?",
         "Am I covered for a prosthetic limb?",
         "How do I appeal a rejected PMB claim?",
-        "What is the CDL?"
+        "What is the CDL, and how is it different from my PMBs?",
+        "How often can I claim for a replacement prosthetic limb?",
+        "Can my medical aid refuse to pay for a prosthetic upgrade?",
+        "What documents do I need to submit a PMB claim?",
+        "What happens if my scheme runs out of prosthetic benefits mid-year?"
     ]
 
     var body: some View {

@@ -70,6 +70,19 @@ struct ContentView: View {
             .navigationTitle("Prosthetics PMBs for SA Members")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .principal) {
+                    HStack(spacing: 8) {
+                        Image("SplashIcon")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 28, height: 28)
+                            .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+                        Text("Prosthetics PMBs for SA Members")
+                            .font(.headline)
+                            .lineLimit(1)
+                    }
+                }
+
                 // Bottom toolbar with all buttons
                 ToolbarItemGroup(placement: .bottomBar) {
                     // Back button

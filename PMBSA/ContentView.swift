@@ -34,36 +34,37 @@ struct ContentView: View {
                     isLoading: $isLoading,
                     store: webViewStore
                 )
-                .ignoresSafeArea(edges: .bottom)
-                
-                // Loading indicator
-                if isLoading {
-                    VStack {
-                        Spacer()
-                        HStack {
-                            ProgressView()
-                                .progressViewStyle(.circular)
-                            Text("Loading...")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                        .padding()
-                        .background(.ultraThinMaterial)
-                        .cornerRadius(10)
-                        .padding(.bottom, 100)
+                .ignoresSafeArea()
+
+                // Loading indicator — stays mounted at all times (opacity-only toggle) rather
+                // than being structurally inserted/removed from the ZStack. A structural change
+                // here, while nested in a NavigationStack, was found to coincide with the
+                // navigation bar transiently rendering above the splash's overlay window.
+                VStack {
+                    Spacer()
+                    HStack {
+                        ProgressView()
+                            .progressViewStyle(.circular)
+                        Text("Loading...")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
-                    .onAppear {
-                        // Failsafe: Force stop loading after 10 seconds
-                        loadingTask?.cancel()
-                        loadingTask = Task {
-                            try? await Task.sleep(nanoseconds: 10_000_000_000)
-                            if !Task.isCancelled {
-                                isLoading = false
-                            }
-                        }
-                    }
-                    .onDisappear {
-                        loadingTask?.cancel()
+                    .padding()
+                    .background(.ultraThinMaterial)
+                    .cornerRadius(10)
+                    .padding(.bottom, 100)
+                }
+                .opacity(isLoading ? 1 : 0)
+                .allowsHitTesting(isLoading)
+            }
+            .onChange(of: isLoading) { _, nowLoading in
+                loadingTask?.cancel()
+                guard nowLoading else { return }
+                // Failsafe: force stop loading after 10 seconds.
+                loadingTask = Task {
+                    try? await Task.sleep(nanoseconds: 10_000_000_000)
+                    if !Task.isCancelled {
+                        isLoading = false
                     }
                 }
             }

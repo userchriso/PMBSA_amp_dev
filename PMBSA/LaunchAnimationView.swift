@@ -6,7 +6,10 @@
 import SwiftUI
 
 struct LaunchAnimationView: View {
-    @Binding var isPresented: Bool
+    /// Called once the sequence is done. The caller (see `SplashWindow`) removes this view's
+    /// window immediately at that point — a hard cut rather than an animated dismissal, since
+    /// every attempt at a graceful crossfade here has surfaced its own transition artifact.
+    var onFinished: () -> Void = {}
 
     private let line1 = "You have PMB rights."
     private let line2 = "Know what you're owed."
@@ -97,9 +100,7 @@ struct LaunchAnimationView: View {
             }
 
             try? await Task.sleep(nanoseconds: 1_700_000_000)
-            withAnimation(.easeOut(duration: 0.45)) {
-                isPresented = false
-            }
+            onFinished()
         }
     }
 }
@@ -115,5 +116,5 @@ private extension Color {
 }
 
 #Preview {
-    LaunchAnimationView(isPresented: .constant(true))
+    LaunchAnimationView()
 }

@@ -43,9 +43,10 @@ class ClaudeService {
     private let model = "claude-haiku-4-5-20251001"
 
     /// Fixed system prompt sent with every request. Specializes the assistant in South African
-    /// PMB/CDL/DTP rules, prosthetics/orthotics coverage, claims/appeals, and the 7 medical
-    /// schemes listed below. This string is the only place PMB reference knowledge is embedded
-    /// in the native app — everything else the assistant "knows" comes from the model itself.
+    /// PMB/CDL/DTP rules, prosthetics/orthotics coverage, claims/appeals, ICD-10 codes for
+    /// lower-limb amputation (mirroring `ICD10CodesView`), and the 7 medical schemes listed
+    /// below. Everything else the assistant "knows" beyond this prompt comes from the model
+    /// itself.
     private let systemPrompt = """
     You are a specialist assistant for Prescribed Minimum Benefits (PMBs) in South Africa, with a particular focus on prosthetics and orthotics coverage for amputees and people with limb differences.
 
@@ -62,6 +63,14 @@ class ClaudeService {
     - How to appeal a rejected claim
     - The role of the Council for Medical Schemes (CMS) in resolving disputes
     - How major SA schemes handle PMB claims: Discovery Health, Bonitas, Fedhealth, Momentum Health, Bestmed, Medshield, GEMS
+    - ICD-10 diagnosis codes for lower-limb amputation, organised by level and cause (WHO ICD-10, as used by SA schemes — not US ICD-10-CM). These justify PMB funding for the matching prosthetic components (socket, liner, knee unit, foot), which are themselves billed separately via NAPPI codes:
+      - Above-knee/hip (transfemoral — socket, knee unit, pylon, foot, liner): S78.0, S78.1, S78.9, Z89.6
+      - Below-knee (transtibial — socket, liner, pylon, foot): S88.0, S88.1, S88.9, Z89.5
+      - Foot/ankle (partial foot or Syme's): S98.0–S98.4, Z89.4
+      - General amputation/prosthetic-fitting status: Z89.7, Z89.9, Z44.1 (fitting/adjustment of artificial leg), Z97.1 (presence of artificial limb)
+      - Underlying causes: E10.5/E11.5 (diabetic peripheral circulatory complications), I70.2 (atherosclerosis of extremities), I73.9 (peripheral vascular disease), I74.3 (arterial embolism/thrombosis of lower extremities), C40.2/C41.4 (malignant bone neoplasm), Q72.0/Q72.9 (congenital lower-limb reduction defects)
+      - Stump/prosthetic complications: T87.2 (stump complications NEC), T87.3 (neuroma), T87.4 (infection), T87.5 (necrosis), T87.6 (other/unspecified)
+      When asked about codes, always clarify that the ICD-10 code is the diagnosis justifying the claim, not the code for the physical device — and recommend confirming the exact code with the treating doctor or prosthetist, since only they can assign it accurately for a specific patient.
 
     Always give accurate, practical advice. Keep answers clear and concise — members are often frustrated and need straightforward help. Remind users that specific benefit details should be confirmed with their scheme.
 

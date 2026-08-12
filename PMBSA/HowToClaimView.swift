@@ -12,7 +12,7 @@ struct HowToClaimView: View {
         ClaimStep(
             number: 1,
             title: "Confirm your amputation qualifies as a PMB condition",
-            body: "Speak to your surgeon or GP. Ask them to confirm the ICD-10 code for your amputation and whether it links to a PMB condition. Common codes: traumatic (S48, S58, S68, S78, S88, S98), diabetic vascular (E11), peripheral vascular disease (I70–I79)."
+            body: "Speak to your surgeon or GP. Ask them to confirm the ICD-10 code for your amputation and whether it links to a PMB condition. Common codes: traumatic (S48, S58, S68, S78, S88, S98), diabetic vascular (E11), peripheral vascular disease (I70–I79). See the ICD-10 Codes reference (Quick Links) for the full lower-limb list, organised by amputation level."
         ),
         ClaimStep(
             number: 2,

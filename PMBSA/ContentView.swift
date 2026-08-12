@@ -21,6 +21,7 @@ struct ContentView: View {
     @State private var showAssistant = false
     @State private var showHowToClaim = false
     @State private var showAppealsComplaints = false
+    @State private var showICD10Codes = false
 
     var body: some View {
         NavigationStack {
@@ -148,7 +149,8 @@ struct ContentView: View {
                     showingInAppBrowser: $showingInAppBrowser,
                     showAssistant: $showAssistant,
                     showHowToClaim: $showHowToClaim,
-                    showAppealsComplaints: $showAppealsComplaints
+                    showAppealsComplaints: $showAppealsComplaints,
+                    showICD10Codes: $showICD10Codes
                 )
             }
             .sheet(isPresented: $showAssistant) {
@@ -159,6 +161,9 @@ struct ContentView: View {
             }
             .sheet(isPresented: $showAppealsComplaints) {
                 AppealsComplaintsView(isPresented: $showAppealsComplaints)
+            }
+            .sheet(isPresented: $showICD10Codes) {
+                ICD10CodesView(isPresented: $showICD10Codes)
             }
             .sheet(isPresented: $showingInAppBrowser) {
                 if let urlString = selectedMedicalAidURL {
@@ -211,6 +216,7 @@ struct QuickLinksView: View {
     @Binding var showAssistant: Bool
     @Binding var showHowToClaim: Bool
     @Binding var showAppealsComplaints: Bool
+    @Binding var showICD10Codes: Bool
 
     // Define your medical aid schemes with their official websites
     let medicalAids = [
@@ -253,6 +259,13 @@ struct QuickLinksView: View {
                         showAppealsComplaints = true
                     } label: {
                         Label("Appeals / Complaints", systemImage: "exclamationmark.bubble.fill")
+                    }
+
+                    Button {
+                        isPresented = false
+                        showICD10Codes = true
+                    } label: {
+                        Label("ICD-10 Codes", systemImage: "figure.walk.motion")
                     }
 
                     Button {

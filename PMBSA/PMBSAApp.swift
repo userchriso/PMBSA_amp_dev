@@ -6,59 +6,37 @@
 //
 
 import SwiftUI
-import UIKit
 
 @main
 struct PMBSAApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .onAppear { SplashWindow.shared.present() }
+            RootView()
         }
     }
 }
 
-/// Shows the launch animation in its own `UIWindow`, layered above the main window (including
-/// its navigation bar and toolbar) via real window z-ordering rather than SwiftUI view nesting.
+/// Shows the launch splash, then replaces it with `ContentView` — a plain structural swap in a
+/// single view hierarchy, not an overlay.
 ///
-/// A SwiftUI overlay placed as a ZStack sibling of `ContentView`, or presented via
-/// `.fullScreenCover`, both proved unreliable here: `ContentView`'s `NavigationStack` chrome
-/// could still render above a plain ZStack overlay, and a `fullScreenCover`'s content isn't
-/// composited live above the presenting view, so fading it to transparent revealed a blank
-/// system backdrop instead of crossfading into the app. A separate window with a higher
-/// `windowLevel` sidesteps both: it's guaranteed to sit above everything in the main window, and
-/// fading it out reveals the main window's already-live content underneath.
-@MainActor
-final class SplashWindow {
-    static let shared = SplashWindow()
+/// Earlier approaches (a ZStack sibling faded over `ContentView`, a `fullScreenCover`, a second
+/// `UIWindow` at a higher `windowLevel`) all kept `ContentView` alive and composited against the
+/// splash at the same time, across either a view-layer or window-layer boundary. Every one of
+/// those surfaced its own compositing artifact right at the handoff — `ContentView`'s chrome
+/// bleeding above the splash, or a stale frame of the splash's own reveal animation flashing back
+/// after `ContentView` appeared — regardless of what `ContentView`'s chrome was built from. This
+/// swap avoids that whole category: `ContentView` doesn't exist until `showSplash` flips to
+/// `false`, so there's never a moment where two live things need to be reconciled against each
+/// other. `showSplash` is flipped with a plain (unanimated) assignment — an animated cross-fade
+/// here previously introduced its own transition artifact.
+struct RootView: View {
+    @State private var showSplash = true
 
-    private var window: UIWindow?
-    private var hasPresented = false
-
-    private init() {}
-
-    func present() {
-        guard !hasPresented, let scene = UIApplication.shared.connectedScenes
-            .first(where: { $0 is UIWindowScene }) as? UIWindowScene else { return }
-        hasPresented = true
-
-        let overlayWindow = UIWindow(windowScene: scene)
-        overlayWindow.windowLevel = .normal + 1
-        overlayWindow.backgroundColor = .clear
-        overlayWindow.isHidden = false
-
-        let hostingController = UIHostingController(
-            rootView: LaunchAnimationView(onFinished: { [weak self] in self?.dismiss() })
-        )
-        hostingController.view.backgroundColor = .clear
-        overlayWindow.rootViewController = hostingController
-
-        window = overlayWindow
-    }
-
-    private func dismiss() {
-        window?.isHidden = true
-        window?.rootViewController = nil
-        window = nil
+    var body: some View {
+        if showSplash {
+            LaunchAnimationView(onFinished: { showSplash = false })
+        } else {
+            ContentView()
+        }
     }
 }

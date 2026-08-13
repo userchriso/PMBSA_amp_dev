@@ -6,9 +6,9 @@
 import SwiftUI
 
 struct LaunchAnimationView: View {
-    /// Called once the sequence is done. The caller (see `SplashWindow`) removes this view's
-    /// window immediately at that point — a hard cut rather than an animated dismissal, since
-    /// every attempt at a graceful crossfade here has surfaced its own transition artifact.
+    /// Called once the sequence is done. The caller (see `RootView`) swaps this view out for
+    /// `ContentView` immediately at that point — a hard cut rather than an animated dismissal,
+    /// since every attempt at a graceful crossfade here has surfaced its own transition artifact.
     var onFinished: () -> Void = {}
 
     private let line1 = "You have PMB rights."

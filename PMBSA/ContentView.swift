@@ -34,7 +34,7 @@ struct ContentView: View {
                     isLoading: $isLoading,
                     store: webViewStore
                 )
-                .ignoresSafeArea()
+                .ignoresSafeArea(edges: .bottom)
 
                 // Loading indicator — stays mounted at all times (opacity-only toggle) rather
                 // than being structurally inserted/removed from the ZStack. A structural change

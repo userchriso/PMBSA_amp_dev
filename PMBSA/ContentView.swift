@@ -257,7 +257,7 @@ struct QuickLinksView: View {
 
                     Button {
                         isPresented = false
-                        webViewStore.scrollToAnchor("funding")
+                        webViewStore.loadURL("https://ampedlifepmbsa.netlify.app/funding.html")
                     } label: {
                         Label {
                             Text("Explore Your Funding Options")
@@ -495,19 +495,6 @@ class WebViewStore {
     func loadURL(_ urlString: String) {
         guard let url = URL(string: urlString) else { return }
         webView?.load(URLRequest(url: url))
-    }
-
-    /// Smooth-scrolls to the element with id `anchorID` within the already-loaded page.
-    ///
-    /// Used instead of `loadURL(_:)` for same-page section jumps — `WKWebView.load(_:)` with a
-    /// URL that only differs by fragment doesn't reliably trigger the browser's native
-    /// scroll-to-anchor behavior, since it's treated as a fresh navigation rather than an
-    /// in-page fragment jump. This assumes the target page (with a matching `id` element) is
-    /// already loaded; it does not navigate anywhere first.
-    func scrollToAnchor(_ anchorID: String) {
-        webView?.evaluateJavaScript(
-            "document.getElementById('\(anchorID)')?.scrollIntoView({behavior: 'smooth', block: 'start'});"
-        )
     }
 }
 

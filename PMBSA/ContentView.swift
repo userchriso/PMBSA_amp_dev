@@ -528,7 +528,8 @@ struct WebView: UIViewRepresentable {
         
         // Set the navigation delegate to handle link clicks
         webView.navigationDelegate = context.coordinator
-        
+        webView.uiDelegate = context.coordinator
+
         // Configure for better mobile experience
         webView.scrollView.contentInsetAdjustmentBehavior = .never
         
@@ -561,10 +562,10 @@ struct WebView: UIViewRepresentable {
         Coordinator(self)
     }
 
-    /// `WKNavigationDelegate` for `WebView`. Keeps `isLoading`/`canGoBack`/`canGoForward`
-    /// bindings in sync with the web view's actual navigation state, and redirects certain
-    /// external domains out to Safari instead of letting them load in-app.
-    class Coordinator: NSObject, WKNavigationDelegate {
+    /// `WKNavigationDelegate`/`WKUIDelegate` for `WebView`. Keeps `isLoading`/`canGoBack`/
+    /// `canGoForward` bindings in sync with the web view's actual navigation state, and redirects
+    /// certain external domains out to Safari instead of letting them load in-app.
+    class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate {
         var parent: WebView
         /// Tracks the last `reload` binding value seen, so `WebView.updateUIView` can detect a
         /// *toggle* of `reload` (rather than reloading on every body re-evaluation). Toggling
@@ -660,6 +661,18 @@ struct WebView: UIViewRepresentable {
             
             // Allow the navigation to happen in the WebView
             decisionHandler(.allow)
+        }
+
+        /// Handles `target="_blank"` links (and `window.open`) for any host not already routed to
+        /// Safari above. Without this, `WKWebView` has no `WKUIDelegate` to ask "create a new
+        /// window for this?" and simply drops the request — the link silently does nothing when
+        /// tapped. Loading `navigationAction.request` back into the same `webView` instead of
+        /// creating a second one keeps the site's "open in a new tab" links working in-app.
+        func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
+            if navigationAction.targetFrame == nil {
+                webView.load(navigationAction.request)
+            }
+            return nil
         }
     }
 }

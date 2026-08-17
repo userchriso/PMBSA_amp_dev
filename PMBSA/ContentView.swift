@@ -43,8 +43,7 @@ struct ContentView: View {
                 VStack {
                     Spacer()
                     HStack {
-                        ProgressView()
-                            .progressViewStyle(.circular)
+                        RunningLoaderView()
                         Text("Loading...")
                             .font(.caption)
                             .foregroundStyle(.secondary)
@@ -400,8 +399,7 @@ struct InAppBrowserView: View {
                 }
                 
                 if isLoading {
-                    ProgressView()
-                        .progressViewStyle(.circular)
+                    RunningLoaderView()
                         .padding()
                         .background(.ultraThinMaterial)
                         .cornerRadius(10)
